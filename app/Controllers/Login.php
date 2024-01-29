@@ -7,31 +7,39 @@ use App\Models\User_model;
 class Login extends BaseController
 {
 	public function index()
-    {
-        return view('login');
-    }
-
-	public function process()
 	{
-		$username = $this->request->getPost('username');
-        $password = $this->request->getPost('password');
+		helper('form');
+		$session = \Config\Services::session($config);
+		$model = new User_model();
+		if ($this->validate([
+			'username' 		=> 'required',
+			'password'		=> 'required'
+		]))
+		{
+			$username = $this->request->getVar('username');
+			$password = $this->request->getVar('password');
+			// Check user
+			$check_user = $model->login($username,$password);
+			if($check_user)
+			{
+				$session->set('username',$username);
+				$session->set('id_user',$check_user['id_user']);
+				$session->set('akses_level',$check_user['akses_level']);
+				$session->set('nama',$check_user['nama']);
+				// Login success
+				$session->setFlashdata('sukses', 'Anda berhasil login');
 
+				return redirect()->to(base_url('admin/dasbor'));
+			}else{
+				$data = array(	'title'	=> 'Login Administrator - Java Web Media',
+								'error'	=> 'Username/password salah');
+								
+				return view('login/index',$data);
+			}
+		}
 
-        // Lakukan proses login
-        $model = new UserModel();
-        $user = $model->login($username, $password);
-
-        if ($user) {
-            // Set session
-            $session = session();
-            $session->set('user_id', $user['id']);
-            $session->set('username', $user['username']);
-            // Redirect ke halaman dasbor atau halaman lainnya
-            return redirect()->to(base_url('dashboard'));
-        } else {
-            // Jika login gagal, kembalikan ke halaman login dengan pesan error
-            return redirect()->to(base_url('login'))->with('error', 'Login failed. Invalid username or password.');
-        }
+		$data = array(	'title'	=> 'Login Administrator - Java Web Media');
+		return view('login/index',$data);
 	}
 
 	// Logout
